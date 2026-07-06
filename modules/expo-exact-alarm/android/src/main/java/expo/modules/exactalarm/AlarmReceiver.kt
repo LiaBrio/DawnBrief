@@ -21,12 +21,14 @@ class AlarmReceiver : BroadcastReceiver() {
     val id = intent.getStringExtra(ExactAlarmIntents.EXTRA_ALARM_ID) ?: return
     val label = intent.getStringExtra(ExactAlarmIntents.EXTRA_LABEL) ?: "Alarm"
     val manager = context.getSystemService(NotificationManager::class.java)
-    manager.createNotificationChannel(
-      NotificationChannel(CHANNEL_ID, "Alarms", NotificationManager.IMPORTANCE_HIGH).apply {
-        description = "Scheduled alarm alerts"
-        lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
-      }
-    )
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      manager.createNotificationChannel(
+        NotificationChannel(CHANNEL_ID, "Alarms", NotificationManager.IMPORTANCE_HIGH).apply {
+          description = "Scheduled alarm alerts"
+          lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+        }
+      )
+    }
     val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
       putExtra(ExactAlarmIntents.EXTRA_ALARM_ID, id)
       putExtra(ExactAlarmIntents.EXTRA_LABEL, label)
