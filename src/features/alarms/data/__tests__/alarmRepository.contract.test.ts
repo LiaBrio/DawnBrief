@@ -135,6 +135,26 @@ describe('SQLiteAlarmRepository', () => {
     repository = new SQLiteAlarmRepository(database);
   });
 
+  async function expectInvalidPayload(rowId: string, payload: unknown): Promise<void> {
+    database.rows.set(rowId, {
+      id: rowId,
+      payload: typeof payload === 'string' ? payload : JSON.stringify(payload),
+      updated_at: morningAlarm.updatedAt,
+    });
+
+    for (const load of [() => repository.get(rowId), () => repository.list()]) {
+      try {
+        await load();
+        throw new Error('expected invalid payload rejection');
+      } catch (error) {
+        expect(error).toMatchObject({
+          message: `alarm_payload_invalid:${rowId}`,
+          cause: expect.anything(),
+        });
+      }
+    }
+  }
+
   it('creates the alarms table and initialization is idempotent', async () => {
     await repository.initialize();
     await repository.initialize();
@@ -188,17 +208,26 @@ describe('SQLiteAlarmRepository', () => {
 
   it.each([
     ['broken JSON', '{'],
-    ['invalid alarm structure', JSON.stringify({ ...morningAlarm, hour: 99 })],
-  ])('throws a stable error for %s', async (_description, payload) => {
-    database.rows.set(morningAlarm.id, {
-      id: morningAlarm.id,
-      payload,
-      updated_at: morningAlarm.updatedAt,
-    });
+    ['missing id', (({ id: _, ...alarm }) => alarm)(morningAlarm)],
+    ['missing label', (({ label: _, ...alarm }) => alarm)(morningAlarm)],
+    ['missing enabled', (({ enabled: _, ...alarm }) => alarm)(morningAlarm)],
+    ['missing snoozeMinutes', (({ snoozeMinutes: _, ...alarm }) => alarm)(morningAlarm)],
+    ['missing createdAt', (({ createdAt: _, ...alarm }) => alarm)(morningAlarm)],
+    ['missing updatedAt', (({ updatedAt: _, ...alarm }) => alarm)(morningAlarm)],
+    ['invalid hour type', { ...morningAlarm, hour: '7' }],
+    ['invalid enabled type', { ...morningAlarm, enabled: 1 }],
+    ['invalid repeat type', { ...morningAlarm, repeat: null }],
+    ['invalid aurora sound', { ...morningAlarm, sound: 'auroraa' }],
+    ['invalid radar sound', { ...morningAlarm, sound: 'radarr' }],
+    ['invalid silk sound', { ...morningAlarm, sound: 'silkk' }],
+    ['invalid repeat kind', { ...morningAlarm, repeat: { kind: 'weekly' } }],
+    ['invalid createdAt', { ...morningAlarm, createdAt: 'not-a-date' }],
+    ['invalid updatedAt ISO form', { ...morningAlarm, updatedAt: '2026-07-01' }],
+  ])('throws a stable error with cause for %s', async (_description, payload) => {
+    await expectInvalidPayload(morningAlarm.id, payload);
+  });
 
-    await expect(repository.get(morningAlarm.id)).rejects.toThrow(
-      `alarm_payload_invalid:${morningAlarm.id}`,
-    );
-    await expect(repository.list()).rejects.toThrow(`alarm_payload_invalid:${morningAlarm.id}`);
+  it('rejects a payload whose id differs from its row id', async () => {
+    await expectInvalidPayload('database-id', morningAlarm);
   });
 });

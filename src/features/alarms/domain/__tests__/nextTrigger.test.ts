@@ -71,6 +71,20 @@ describe('nextTrigger', () => {
 
 describe('assertAlarm', () => {
   test.each([
+    ['alarm object', null, 'alarm_invalid'],
+    ['id', { ...base, id: '' }, 'id_invalid'],
+    ['label', { ...base, label: '' }, 'label_invalid'],
+    ['enabled', { ...base, enabled: 'yes' }, 'enabled_invalid'],
+    ['sound', { ...base, sound: 'bells' }, 'sound_invalid'],
+    ['snooze minutes', { ...base, snoozeMinutes: -1 }, 'snooze_minutes_invalid'],
+    ['created timestamp', { ...base, createdAt: 'not-a-date' }, 'created_at_invalid'],
+    ['updated timestamp', { ...base, updatedAt: '2026-07-01' }, 'updated_at_invalid'],
+    ['repeat', { ...base, repeat: { kind: 'weekly' } }, 'repeat_kind_invalid'],
+  ])('rejects invalid %s', (_name, alarm, message) => {
+    expect(() => assertAlarm(alarm)).toThrow(message);
+  });
+
+  test.each([
     ['fractional hour', { ...base, hour: 7.5 }, 'hour_out_of_range'],
     ['hour below range', { ...base, hour: -1 }, 'hour_out_of_range'],
     ['hour above range', { ...base, hour: 24 }, 'hour_out_of_range'],
@@ -97,5 +111,9 @@ describe('assertAlarm', () => {
     const alarm: Alarm = { ...base, repeat: { kind: 'weekdays', days: [1, 1] } };
 
     expect(() => assertAlarm(alarm)).toThrow('weekday_duplicate');
+  });
+
+  test('accepts a fully valid alarm', () => {
+    expect(() => assertAlarm(base)).not.toThrow();
   });
 });

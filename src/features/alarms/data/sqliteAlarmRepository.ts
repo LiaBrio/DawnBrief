@@ -23,8 +23,9 @@ const CREATE_ALARMS_TABLE = `
 
 function decodeAlarm(row: AlarmRow): Alarm {
   try {
-    const alarm = JSON.parse(row.payload) as Alarm;
+    const alarm: unknown = JSON.parse(row.payload);
     assertAlarm(alarm);
+    if (alarm.id !== row.id) throw new Error('alarm_id_mismatch');
     return alarm;
   } catch (cause) {
     const error = new Error(`alarm_payload_invalid:${row.id}`) as Error & { cause?: unknown };
