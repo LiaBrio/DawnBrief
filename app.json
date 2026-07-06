@@ -35,7 +35,8 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-notifications"
+      "expo-notifications",
+      "./modules/expo-exact-alarm"
     ],
     "experiments": {
       "typedRoutes": true
