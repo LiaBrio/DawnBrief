@@ -5,6 +5,9 @@ type ExpoExactAlarmModule = {
   cancel(id: string): Promise<void>;
   canSchedule(): Promise<boolean>;
   openSettings(): Promise<void>;
+  consumeRescheduleRequest(): Promise<string | null>;
+  canPostNotifications(): Promise<boolean>;
+  openNotificationSettings(): Promise<void>;
 };
 
 const nativeModule = requireNativeModule<ExpoExactAlarmModule>('ExpoExactAlarm');
@@ -21,5 +24,14 @@ export const exactAlarm = {
   },
   openSettings(): Promise<void> {
     return nativeModule.openSettings();
+  },
+  consumeRescheduleRequest(): Promise<string | null> {
+    return nativeModule.consumeRescheduleRequest();
+  },
+  canPostNotifications(): Promise<boolean> {
+    return nativeModule.canPostNotifications();
+  },
+  openNotificationSettings(): Promise<void> {
+    return nativeModule.openNotificationSettings();
   },
 };

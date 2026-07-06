@@ -1,12 +1,15 @@
 package expo.modules.exactalarm
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.core.content.ContextCompat
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -56,6 +59,18 @@ class ExpoExactAlarmModule : Module() {
       Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
     }
 
+    AsyncFunction("consumeRescheduleRequest") {
+      RescheduleRequestStore.consume(context)
+    }
+
+    AsyncFunction("canPostNotifications") {
+      Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(
+          context,
+          Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
     AsyncFunction("openSettings") {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
@@ -63,6 +78,21 @@ class ExpoExactAlarmModule : Module() {
           addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         })
       }
+    }
+
+    AsyncFunction("openNotificationSettings") {
+      val action = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Settings.ACTION_APP_NOTIFICATION_SETTINGS
+      } else {
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+      }
+      context.startActivity(Intent(action).apply {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        }
+        data = Uri.parse("package:${context.packageName}")
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      })
     }
   }
 }

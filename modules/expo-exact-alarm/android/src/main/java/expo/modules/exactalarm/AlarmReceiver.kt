@@ -41,7 +41,7 @@ class AlarmReceiver : BroadcastReceiver() {
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-      .setSmallIcon(context.applicationInfo.icon)
+      .setSmallIcon(R.drawable.ic_stat_dawnbrief_alarm)
       .setContentTitle(label)
       .setContentText("Alarm")
       .setCategory(NotificationCompat.CATEGORY_ALARM)

@@ -3,6 +3,9 @@ const mockNativeModule = {
   cancel: jest.fn(),
   canSchedule: jest.fn(),
   openSettings: jest.fn(),
+  consumeRescheduleRequest: jest.fn(),
+  canPostNotifications: jest.fn(),
+  openNotificationSettings: jest.fn(),
 };
 
 (globalThis.expo!.modules as Record<string, unknown>).ExpoExactAlarm = mockNativeModule;
@@ -45,4 +48,28 @@ describe('exactAlarm', () => {
     await exactAlarm.openSettings();
     expect(mockNativeModule.openSettings).toHaveBeenCalledWith();
   });
+
+  it('consumes a pending native reschedule request', async () => {
+    mockNativeModule.consumeRescheduleRequest.mockResolvedValue(IntentReason.TIMEZONE_CHANGED);
+
+    await expect(exactAlarm.consumeRescheduleRequest()).resolves.toBe(IntentReason.TIMEZONE_CHANGED);
+    expect(mockNativeModule.consumeRescheduleRequest).toHaveBeenCalledWith();
+  });
+
+  it('reports notification posting capability', async () => {
+    mockNativeModule.canPostNotifications.mockResolvedValue(false);
+
+    await expect(exactAlarm.canPostNotifications()).resolves.toBe(false);
+  });
+
+  it('opens app notification settings', async () => {
+    mockNativeModule.openNotificationSettings.mockResolvedValue(undefined);
+
+    await exactAlarm.openNotificationSettings();
+    expect(mockNativeModule.openNotificationSettings).toHaveBeenCalledWith();
+  });
 });
+
+const IntentReason = {
+  TIMEZONE_CHANGED: 'android.intent.action.TIMEZONE_CHANGED',
+} as const;
