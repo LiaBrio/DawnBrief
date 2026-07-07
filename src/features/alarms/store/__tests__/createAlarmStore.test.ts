@@ -58,6 +58,19 @@ describe('createAlarmStore', () => {
     expect(deps.scheduler.cancel).toHaveBeenCalledWith('a2');
   });
 
+  test('load preserves reschedule error details when durable rescheduling fails', async () => {
+    const deps = dependencies([alarm()]);
+    deps.scheduler.consumeRescheduleRequest.mockResolvedValue('boot_completed');
+    deps.scheduler.schedule.mockRejectedValue(new Error('native failed'));
+    const store = createAlarmStore(deps);
+
+    await expect(store.getState().load()).rejects.toBeInstanceOf(AggregateError);
+
+    expect(store.getState().alarms).toEqual([alarm()]);
+    expect(store.getState().loading).toBe(false);
+    expect(store.getState().error).toBe('alarm_reschedule_failed:a1');
+  });
+
   test('save persists then schedules enabled alarm and refreshes list', async () => {
     const deps = dependencies();
     const item = alarm();

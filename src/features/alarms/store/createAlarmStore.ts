@@ -4,6 +4,8 @@ import type { AlarmRepository } from '../data/alarmRepository';
 import { assertAlarm, type Alarm } from '../domain/alarm';
 import { nextTrigger } from '../domain/nextTrigger';
 
+const RESCHEDULE_ERROR_PREFIX = 'alarm_reschedule_failed:';
+
 export interface AlarmScheduler {
   schedule(id: string, trigger: Date, label: string): Promise<void>;
   cancel(id: string): Promise<void>;
@@ -52,10 +54,10 @@ export function createAlarmStore(
     }
     if (failures.length > 0) {
       const ids = failures.map(({ id }) => id).join(',');
-      store.setState({ error: `alarm_reschedule_failed:${ids}` });
+      store.setState({ error: `${RESCHEDULE_ERROR_PREFIX}${ids}` });
       throw new AggregateError(
         failures.map(({ error }) => error),
-        `alarm_reschedule_failed:${ids}`,
+        `${RESCHEDULE_ERROR_PREFIX}${ids}`,
       );
     }
     store.setState({ error: null });
@@ -79,7 +81,9 @@ export function createAlarmStore(
         if (generation !== loadGeneration) return;
         if (reason !== null) await reschedule(alarms);
       } catch (error) {
-        if (generation === loadGeneration) set({ error: 'alarm_load_failed' });
+        if (generation === loadGeneration && !store.getState().error?.startsWith(RESCHEDULE_ERROR_PREFIX)) {
+          set({ error: 'alarm_load_failed' });
+        }
         throw error;
       } finally {
         if (generation === loadGeneration) set({ loading: false });
