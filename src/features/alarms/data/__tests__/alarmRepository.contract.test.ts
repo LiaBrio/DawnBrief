@@ -115,14 +115,14 @@ class FakeSQLiteDatabase {
     return { changes: 1, lastInsertRowId: 0 };
   }
 
-  async getAllAsync(sql: string, ...params: unknown[]): Promise<Row[]> {
+  async getAllAsync<T>(sql: string, ...params: unknown[]): Promise<T[]> {
     this.getAllCalls.push({ sql, params });
-    return [...this.rows.values()].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+    return [...this.rows.values()].sort((a, b) => b.updated_at.localeCompare(a.updated_at)) as T[];
   }
 
-  async getFirstAsync(sql: string, ...params: unknown[]): Promise<Row | null> {
+  async getFirstAsync<T>(sql: string, ...params: unknown[]): Promise<T | null> {
     this.getFirstCalls.push({ sql, params });
-    return this.rows.get(params[0] as string) ?? null;
+    return (this.rows.get(params[0] as string) as T | undefined) ?? null;
   }
 }
 

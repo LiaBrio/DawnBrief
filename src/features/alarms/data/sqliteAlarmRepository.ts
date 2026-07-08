@@ -1,5 +1,3 @@
-import type { SQLiteDatabase } from 'expo-sqlite';
-
 import { assertAlarm, type Alarm } from '../domain/alarm';
 import type { AlarmRepository } from './alarmRepository';
 
@@ -8,10 +6,12 @@ type AlarmRow = {
   payload: string;
 };
 
-type AlarmDatabase = Pick<
-  SQLiteDatabase,
-  'execAsync' | 'getAllAsync' | 'getFirstAsync' | 'runAsync'
->;
+export type AlarmDatabase = {
+  execAsync(source: string): Promise<unknown>;
+  getAllAsync<T>(source: string, ...params: unknown[]): Promise<T[]>;
+  getFirstAsync<T>(source: string, ...params: unknown[]): Promise<T | null>;
+  runAsync(source: string, ...params: unknown[]): Promise<unknown>;
+};
 
 const CREATE_ALARMS_TABLE = `
   CREATE TABLE IF NOT EXISTS alarms (

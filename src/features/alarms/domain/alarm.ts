@@ -11,6 +11,7 @@ export type Alarm = {
   repeat: RepeatRule;
   sound: 'aurora' | 'radar' | 'silk';
   snoozeMinutes: number;
+  note?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -46,6 +47,7 @@ export function assertAlarm(alarm: unknown): asserts alarm is Alarm {
     throw new Error('minute_out_of_range');
   }
   if (typeof alarm.enabled !== 'boolean') throw new Error('enabled_invalid');
+  if (alarm.note !== undefined && typeof alarm.note !== 'string') throw new Error('note_invalid');
   if (alarm.sound !== 'aurora' && alarm.sound !== 'radar' && alarm.sound !== 'silk') {
     throw new Error('sound_invalid');
   }

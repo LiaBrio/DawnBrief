@@ -1,44 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
+import { Link } from 'expo-router';
 import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 
 import { AlarmCard } from '@/src/components/AlarmCard';
 import { EmptyState } from '@/src/components/EmptyState';
 import { NextAlarmHero } from '@/src/components/NextAlarmHero';
-import type { Alarm } from '@/src/features/alarms/domain/alarm';
+import { useAlarmStore } from '@/src/features/alarms/store/useAlarmStore';
 import { palette, tokens } from '@/src/theme/tokens';
-
-const INITIAL_ALARMS: Alarm[] = [
-  {
-    id: 'morning',
-    label: '起床',
-    hour: 7,
-    minute: 30,
-    enabled: true,
-    repeat: { kind: 'daily' },
-    sound: 'aurora',
-    snoozeMinutes: 9,
-    createdAt: '2026-07-01T00:00:00.000Z',
-    updatedAt: '2026-07-01T00:00:00.000Z',
-  },
-  {
-    id: 'workday',
-    label: '工作日晨报',
-    hour: 8,
-    minute: 0,
-    enabled: false,
-    repeat: { kind: 'weekdays', days: [1, 2, 3, 4, 5] },
-    sound: 'silk',
-    snoozeMinutes: 5,
-    createdAt: '2026-07-01T00:00:00.000Z',
-    updatedAt: '2026-07-01T00:00:00.000Z',
-  },
-];
 
 export default function AlarmScreen() {
   const mode = useColorScheme() === 'dark' ? 'dark' : 'light';
   const colors = palette(mode);
-  const [alarms, setAlarms] = useState(INITIAL_ALARMS);
+  const alarms = useAlarmStore((state) => state.alarms);
+  const loading = useAlarmStore((state) => state.loading);
+  const error = useAlarmStore((state) => state.error);
+  const load = useAlarmStore((state) => state.load);
+  const toggle = useAlarmStore((state) => state.toggle);
   const now = useMemo(() => new Date(), []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -53,16 +35,19 @@ export default function AlarmScreen() {
                 <Text style={[styles.kicker, { color: colors.secondary }]}>DawnBrief</Text>
                 <Text style={[styles.title, { color: colors.text }]}>闹钟</Text>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="新增闹钟"
-                accessibilityHint="创建闹钟流程将在下一阶段接入"
-                style={[styles.addButton, { backgroundColor: colors.accent }]}
-              >
-                <Text style={[styles.addButtonText, { color: colors.onAccent }]}>＋</Text>
-              </Pressable>
+              <Link href="/alarm/edit" asChild>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="新增闹钟"
+                  style={[styles.addButton, { backgroundColor: colors.accent }]}
+                >
+                  <Text style={[styles.addButtonText, { color: colors.onAccent }]}>＋</Text>
+                </Pressable>
+              </Link>
             </View>
             <NextAlarmHero alarms={alarms} now={now} />
+            {loading ? <Text style={[styles.inlineMessage, { color: colors.secondary }]}>正在载入闹钟…</Text> : null}
+            {error ? <Text style={[styles.inlineMessage, { color: colors.accent }]}>{error}</Text> : null}
           </>
         )}
         ListEmptyComponent={<EmptyState />}
@@ -70,13 +55,7 @@ export default function AlarmScreen() {
         renderItem={({ item }) => (
           <AlarmCard
             alarm={item}
-            onToggle={(enabled) => {
-              setAlarms((current) => current.map((alarm) => (
-                alarm.id === item.id
-                  ? { ...alarm, enabled, updatedAt: new Date().toISOString() }
-                  : alarm
-              )));
-            }}
+            onToggle={(enabled) => { void toggle(item.id, enabled); }}
           />
         )}
       />
@@ -125,5 +104,10 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: tokens.spacing.md,
+  },
+  inlineMessage: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: tokens.spacing.md,
   },
 });
